@@ -1,2 +1,5 @@
-# letsencrypt
-Docker Container for managing subdomains and https certificates. Uses letsencrypt, acme4j, nginx and Docker.
+# https-manager 2
+
+This is a web app in a Docker container for managing a webserver containing subdomains.
+This app creates https certificates for the main domain and the subdomains. It also manages nginx.
+It uses letsencrypt, acme4j, nginx and Docker.
