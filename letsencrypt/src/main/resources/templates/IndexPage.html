@@ -1,0 +1,27 @@
+{{master: master}}
+
+<style>
+  .w4 { width: 400px; }
+</style>
+
+<div class="row"> 
+    <div class="col-lg-12">
+        <h1 class="page-header">https manager 2</h1>
+
+        <p>
+            <a href="/fetch-certificate" class="btn btn-primary br w4">Fetch certificate</a>
+            <a href="/check-certificates" class="btn btn-default br w4">Check certificates</a>
+        </p>
+        
+        <p style="margin-top: 3cm;">
+            <a href="/install-nginx" class="btn btn-default br">Install nginx</a>
+            <a href="/reinstall-nginx" class="btn btn-default br">Reinstall nginx</a>
+            <a href="/uninstall-nginx" class="btn btn-default br">Uninstall nginx</a>
+            <a href="/write-nginx-conf/0" class="btn btn-default br">Write nginx conf phase 0</a>
+            <a href="/write-nginx-conf/1" class="btn btn-default br">Write nginx conf phase 1</a>
+            <a href="/write-nginx-conf/2" class="btn btn-default br">Write nginx conf phase 2</a>
+            <a href="/cleanup-acme" class="btn btn-default br">Cleanup acme files</a>
+        </p>
+        <p style="margin-top: 2em; color: #999;"><small>Version {{VERSION}}</small></p>
+    </div>
+</div>

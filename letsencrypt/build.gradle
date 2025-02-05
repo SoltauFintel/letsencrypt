@@ -1,0 +1,29 @@
+plugins {
+    id 'application'
+    id 'java-library'
+    id 'eclipse'
+    id 'com.bmuschko.docker-java-application' version '6.7.0'
+}
+
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+
+application {
+    mainClass = 'httpsmanager.HttpsManager2App'
+}
+
+dependencies {
+    implementation 'com.github.soltaufintel.amalia:amalia-web:0.20.1'
+    implementation 'com.github.docker-java:docker-java:3.3.6'
+    implementation 'org.shredzone.acme4j:acme4j-client:3.5.0'
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+    maven { url 'https://www.javaxt.com/maven' }
+}
+
+apply from: 'gradle/docker.gradle'
