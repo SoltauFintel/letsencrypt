@@ -7,6 +7,8 @@ import java.util.List;
 
 import org.pmw.tinylog.Logger;
 
+import com.google.common.base.Strings;
+
 import httpsmanager.HttpsManager2App;
 import httpsmanager.base.FileService;
 import httpsmanager.domain.Domain;
@@ -18,11 +20,20 @@ public class LetsEncryptService {
 
     public void fetchCertificate() {
         try {
+            Logger.info("==== LetsEncryptService ====");
+            Logger.info("LetsEncryptService step 1: make request");
             Acme4jRequest req = makeRequest();
+            
+            Logger.info("LetsEncryptService step 2: fetch certificate");
             req.fetchCertificate();
+            
+            Logger.info("LetsEncryptService step 3: save domain files");
             saveDomainFiles(req);
+
+            Logger.info("LetsEncryptService step 4: update Nginx (phase 2)");
             new NginxService().updateNginx(2);
-            Logger.info("---- LetsEncryptService completed ----");
+            
+            Logger.info("==== LetsEncryptService completed ====");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -90,13 +101,14 @@ public class LetsEncryptService {
                 File file = new File(HttpsManager2App.config.getHtml().getLocal() + "/acme/" + domain + filename);
                 FileService.saveTextFile(file, content);
                 if (file.isFile()) {
-                    Logger.info(domain + " | acceptChallenge() saved file: " + file.getAbsolutePath());
+                    Logger.info(Strings.padEnd(domain, 35, ' ') + " | acceptChallenge() saved file: " + file.getAbsolutePath());
                 }
                 files.add(file);
             }
 
             @Override
             public void allChallengesAccepted() {
+                Logger.info("all challenges accepted -> update Nginx (phase 1)");
                 new NginxService().updateNginx(1);
             }
         };
@@ -106,6 +118,7 @@ public class LetsEncryptService {
     private void saveDomainFiles(Acme4jRequest req) {
         final String basePath = HttpsManager2App.config.getCertificates().getLocal() + "/";
         for (Domain domain : new DomainAccess().list()) {
+        	Logger.info("saving domain files for " + domain.getPublicDomain());
             String path = basePath + domain.getPublicDomain() + "/";
             // TODO Die Dateien sind für alle Subdomains gleich. D.h. in Phase 2 könnte das auf eine zentrale Datei verweisen. (also ohne $publicDomain)
             copy(req.getDomainChainFile(), path + "fullchain.pem");
@@ -115,7 +128,7 @@ public class LetsEncryptService {
     
     private void copy(File sourceFile, String targetFile) {
         File tf = new File(targetFile);
-        Logger.debug("copying '" + sourceFile.getAbsolutePath() + "' to '" + tf.getAbsolutePath() + "'");
+        Logger.info("  copying '" + sourceFile.getAbsolutePath() + "' to '" + tf.getAbsolutePath() + "'");
         FileService.copy(sourceFile, tf);
     }
 }

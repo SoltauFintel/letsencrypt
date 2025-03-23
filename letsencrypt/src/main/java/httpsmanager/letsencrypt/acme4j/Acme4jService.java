@@ -107,14 +107,14 @@ public class Acme4jService {
         challenge.trigger();
 
         // Poll for the challenge to complete.
-        Logger.info("waiting for challenge to be completed...");
+        Logger.info("  waiting for challenge to be completed...");
         Status status = challenge.waitForCompletion(timeout);
         if (!Status.VALID.equals(status)) {
             Logger.error("Challenge has failed, reason: {}", challenge.getError().map(Problem::toString).orElse("unknown"));
             throw new AcmeException("Challenge failed. Giving up. See error log.");
         }
         
-        Logger.info("--- challenge completed ---");
+        Logger.info("  challenge completed");
     }
 
     private static void waitForOrderCompletion(Order order, List<String> domains, File domainKeyFile, File domainChainFile) throws IOException, AcmeException, InterruptedException {

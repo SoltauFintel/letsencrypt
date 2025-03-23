@@ -49,7 +49,6 @@ public class NginxService {
     }
     
     public void updateNginx(int phase) {
-        Logger.info("-- update nginx, phase " + phase);
         writeConf(phase);
         uninstall();
         install();
