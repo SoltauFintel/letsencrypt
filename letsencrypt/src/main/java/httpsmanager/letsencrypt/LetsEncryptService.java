@@ -4,6 +4,9 @@ import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.pmw.tinylog.Logger;
 
@@ -20,26 +23,44 @@ public class LetsEncryptService {
 
     public void fetchCertificate() {
         try {
-            Logger.info("==== LetsEncryptService ====");
-            Logger.info("LetsEncryptService step 1: make request");
-            Acme4jRequest req = makeRequest();
-            
-            Logger.info("LetsEncryptService step 2: fetch certificate");
-            req.fetchCertificate();
-            
-            Logger.info("LetsEncryptService step 3: save domain files");
-            saveDomainFiles(req);
+			Logger.info("==== LetsEncryptService ====");
+			Logger.info("LetsEncryptService step 1: make requests");
+			List<Acme4jRequest> requests = makeRequests();
 
-            Logger.info("LetsEncryptService step 4: update Nginx (phase 2)");
-            new NginxService().updateNginx(2);
-            
-            Logger.info("==== LetsEncryptService completed ====");
+			for (Acme4jRequest req : requests) {
+				Logger.info("LetsEncryptService step 2: fetch certificate | " + req.getDomains().get(0));
+				req.fetchCertificate();
+
+				Logger.info("LetsEncryptService step 3: save domain files | " + req.getDomains().get(0));
+				saveDomainFiles(req);
+			}
+
+			Logger.info("LetsEncryptService step 4: update Nginx (phase 2)");
+			new NginxService().updateNginx(2);
+
+			Logger.info("==== LetsEncryptService completed ====");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private Acme4jRequest makeRequest() {
+	private List<Acme4jRequest> makeRequests() {
+		List<Acme4jRequest> ret = new ArrayList<>();
+		List<Domain> domains = new DomainAccess().list();
+		Set<String> certificateNames = new TreeSet<>();
+		for (Domain domain : domains) {
+			certificateNames.add(domain.getCertificateName());
+		}
+		Logger.info("certificate names: " + certificateNames);
+		for (String certificateName : certificateNames) {
+			ret.add(makeRequest(domains.stream()
+					.filter(i -> i.getCertificateName().equals(certificateName))
+					.collect(Collectors.toList())));
+		}
+		return ret;
+	}
+    
+    private Acme4jRequest makeRequest(List<Domain> domains) {
         Acme4jRequest req = new Acme4jRequest() {
             private final List<File> files = new ArrayList<>();
             
@@ -61,7 +82,6 @@ public class LetsEncryptService {
             @Override
             public List<String> getDomains() {
                 List<String> ret = new ArrayList<>();
-                List<Domain> domains = new DomainAccess().list();
                 for (Domain d : domains) {
                     if (d.isRoot()) {
                         ret.add(d.getPublicDomain()); // root domain at first position
@@ -72,7 +92,6 @@ public class LetsEncryptService {
                         ret.add(d.getPublicDomain());
                     }
                 }
-                Logger.info("domains: " + ret);
                 return ret;
             }
             
@@ -93,7 +112,7 @@ public class LetsEncryptService {
             
             private File file(String dnt) {
                 String f = getCertificateAuthorityUrl().contains("staging") ? "/staging/" : "/production/";
-                return new File(HttpsManager2App.config.getDataFolder() + f + dnt);
+                return new File(HttpsManager2App.config.getDataFolder() + "/" + domains.get(0).getCertificateName() + f + dnt);
             }
             
             @Override
@@ -112,15 +131,19 @@ public class LetsEncryptService {
                 new NginxService().updateNginx(1);
             }
         };
+        Logger.info("CERTIFICATE NAME: " + domains.get(0).getCertificateName());
+        Logger.info("  domains          : " + req.getDomains());
+        Logger.info("  domain key file  : " + req.getDomainKeyFile());
+        Logger.info("  user key file    : " + req.getUserKeyFile());
+        Logger.info("  domain chain file: " + req.getDomainChainFile());
         return req;
     }
 
     private void saveDomainFiles(Acme4jRequest req) {
         final String basePath = HttpsManager2App.config.getCertificates().getLocal() + "/";
         for (Domain domain : new DomainAccess().list()) {
-        	Logger.info("saving domain files for " + domain.getPublicDomain());
+        	Logger.info("  saving domain files for " + domain.getPublicDomain());
             String path = basePath + domain.getPublicDomain() + "/";
-            // TODO Die Dateien sind für alle Subdomains gleich. D.h. in Phase 2 könnte das auf eine zentrale Datei verweisen. (also ohne $publicDomain)
             copy(req.getDomainChainFile(), path + "fullchain.pem");
             copy(req.getDomainKeyFile(), path + "privkey.pem");
         }
@@ -128,7 +151,7 @@ public class LetsEncryptService {
     
     private void copy(File sourceFile, String targetFile) {
         File tf = new File(targetFile);
-        Logger.info("  copying '" + sourceFile.getAbsolutePath() + "' to '" + tf.getAbsolutePath() + "'");
+        Logger.info("    copying '" + sourceFile.getAbsolutePath() + "' to '" + tf.getAbsolutePath() + "'");
         FileService.copy(sourceFile, tf);
     }
 }
