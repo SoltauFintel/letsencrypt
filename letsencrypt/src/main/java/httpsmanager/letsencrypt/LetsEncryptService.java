@@ -141,13 +141,16 @@ public class LetsEncryptService {
 
     private void saveDomainFiles(Acme4jRequest req) {
         final String basePath = HttpsManager2App.config.getCertificates().getLocal() + "/";
-        for (Domain domain : new DomainAccess().list()) {
-        	Logger.info("  saving domain files for " + domain.getPublicDomain());
-            String path = basePath + domain.getPublicDomain() + "/";
-            copy(req.getDomainChainFile(), path + "fullchain.pem");
-            copy(req.getDomainKeyFile(), path + "privkey.pem");
-        }
-    }
+		for (Domain domain : new DomainAccess().list()) {
+			if (!req.getDomains().contains(domain.getPublicDomain())) {
+				continue;
+			}
+			Logger.info("  saving domain files for " + domain.getPublicDomain());
+			String path = basePath + domain.getPublicDomain() + "/";
+			copy(req.getDomainChainFile(), path + "fullchain.pem");
+			copy(req.getDomainKeyFile(), path + "privkey.pem");
+		}
+	}
     
     private void copy(File sourceFile, String targetFile) {
         File tf = new File(targetFile);
